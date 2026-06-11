@@ -1,15 +1,30 @@
 #!/usr/bin/env node
 // claude-here — register/remove an "Open Claude Here" Windows right-click entry.
-// Usage:  npx claude-here install   |   npx claude-here uninstall
+// Usage:  npx claude-here {install|uninstall}  [--lang <en|zh>]
 'use strict'
 
 const { spawnSync } = require('node:child_process')
 const process = require('node:process')
 
+const { STRINGS, pickLang } = require('../lib/i18n.cjs')
+
 const BG_KEY = 'HKCU\\Software\\Classes\\Directory\\Background\\shell\\OpenClaudeHere'
 const DIR_KEY = 'HKCU\\Software\\Classes\\Directory\\shell\\OpenClaudeHere'
-const VERB = 'Open Claude Here'
 const ICON = `${process.env.SystemRoot || 'C:\\Windows'}\\System32\\cmd.exe,0`
+
+// ─── i18n ──────────────────────────────────────────────────────
+//
+// Strings and resolution logic live in lib/i18n.cjs. Add a new
+// language by adding a key to STRINGS there.
+
+const LANG = pickLang()
+if (!STRINGS[LANG]) {
+  // Always report the error in English — we can't trust the unknown
+  // lang to have its own message.
+  process.stderr.write(`${STRINGS.en.unknownLang(LANG, Object.keys(STRINGS))}\n`)
+  process.exit(1)
+}
+const t = STRINGS[LANG]
 
 // ─── reg.exe wrapper ──────────────────────────────────────────
 // reg.exe: status 0 = success, 1 = "cannot find key" (for delete),
@@ -50,10 +65,7 @@ function resolveOnPath(exe) {
 function resolveClaude() {
   const r = spawnSync('where', ['claude'], { encoding: 'utf8' })
   if (r.status !== 0) {
-    throw new Error(
-      '`claude` not found on PATH. Install Claude Code first:\n' +
-        '  https://docs.claude.com/en/docs/claude-code',
-    )
+    throw new Error(t.claudeNotFound)
   }
   const first = (r.stdout || '').split(/\r?\n/).map((s) => s.trim()).find(Boolean)
   if (!first) throw new Error('`where claude` returned no path')
@@ -69,8 +81,15 @@ function pickTerminal(absoluteClaude) {
   const cmd = `"${absoluteClaude}"`
 
   // 1. Windows Terminal.
+  //
+  // Don't probe with `-?` / `--version` / `--help` — every one of
+  // these opens a GUI dialog (Help or About) in Windows Terminal.
+  // Trust `where` alone: if it finds wt.exe, the file exists and in
+  // practice launches. The rare case of a broken App Execution Alias
+  // stub is acceptable to defer to runtime — the user can just
+  // re-run `claude-here install`.
   const wtPath = resolveOnPath('wt.exe')
-  if (wtPath && canLaunch([wtPath, '-?'])) {
+  if (wtPath) {
     return [
       'Windows Terminal',
       `"${wtPath}" -d "%V" cmd /k ${cmd}`,
@@ -109,14 +128,18 @@ function pickTerminal(absoluteClaude) {
 // skip the redundant "add key /f" pre-step.
 
 function writeVerb(key, command) {
-  const r1 = reg('add', key, '/ve', '/d', VERB, '/f')
+  const r1 = reg('add', key, '/ve', '/d', t.verb, '/f')
   if (!r1.ok) throw new Error(`write verb to ${key} failed: ${r1.stderr}`)
   const r2 = reg('add', key, '/v', 'Icon', '/t', 'REG_SZ', '/d', ICON, '/f')
   if (!r2.ok) throw new Error(`write Icon to ${key} failed: ${r2.stderr}`)
-  const r3 = reg('add', key, '/v', 'Position', '/t', 'REG_SZ', '/d', 'Top', '/f')
-  if (!r3.ok) throw new Error(`write Position to ${key} failed: ${r3.stderr}`)
   const r4 = reg('add', `${key}\\command`, '/ve', '/d', command, '/f')
   if (!r4.ok) throw new Error(`write command to ${key}\\command failed: ${r4.stderr}`)
+  // v0.x set Position=Top to push the entry to the top of the menu;
+  // v1.0.0 lets Windows sort it naturally. `reg add` only updates the
+  // values you name, so a stale Position from a prior install would
+  // otherwise linger. Remove it explicitly. Missing value → status 1
+  // → ignored.
+  reg('delete', key, '/v', 'Position', '/f')
 }
 
 function queryKey(key) {
@@ -158,8 +181,8 @@ function install() {
     throw new Error(`${err.message}${note}`)
   }
 
-  process.stdout.write('Done. Right-click a folder to see "Open Claude Here".\n')
-  process.stdout.write('Run `npx claude-here uninstall` to remove.\n')
+  process.stdout.write(`${t.installDone(t.verb)}\n`)
+  process.stdout.write(`${t.runUninstallHint}\n`)
 }
 
 function uninstall() {
@@ -176,22 +199,38 @@ function uninstall() {
   if (queryKey(BG_KEY) || queryKey(DIR_KEY)) {
     throw new Error('a registry key still exists after delete; check permissions')
   }
-  process.stdout.write('Done.\n')
+  process.stdout.write(`${t.uninstallDone}\n`)
 }
 
 // ─── entry point ──────────────────────────────────────────────
 
 if (process.platform !== 'win32') {
-  process.stderr.write('claude-here is Windows-only (writes to HKCU via reg.exe).\n')
+  process.stderr.write(`${t.winOnly}\n`)
   process.exit(1)
 }
 
-const cmd = process.argv[2]
+// Find the subcommand, skipping --lang and its value. This keeps
+// `claude-here --lang zh install` working the same as
+// `claude-here install --lang zh`. Unknown `--*` flags are just
+// ignored (we only have one).
+const args = process.argv.slice(2)
+let cmd
+for (let i = 0; i < args.length; i++) {
+  const a = args[i]
+  if (a === '--lang') {
+    i++  // skip the value
+    continue
+  }
+  if (!a.startsWith('--')) {
+    cmd = a
+    break
+  }
+}
 try {
   if (cmd === 'install') install()
   else if (cmd === 'uninstall') uninstall()
   else {
-    process.stdout.write('Usage: npx claude-here {install|uninstall}\n')
+    process.stdout.write(`${t.usage}\n`)
     process.exit(1)
   }
 } catch (err) {

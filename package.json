@@ -1,6 +1,6 @@
 {
   "name": "claude-here",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "Add an \"Open Claude Here\" entry to the Windows right-click menu for Claude Code CLI.",
   "engines": {
     "node": ">=18"
@@ -16,9 +16,17 @@
     "right-click"
   ],
   "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/klarkxy/claude-here.git"
+  },
+  "bugs": "https://github.com/klarkxy/claude-here/issues",
+  "homepage": "https://github.com/klarkxy/claude-here#readme",
   "files": [
     "bin/",
+    "lib/",
     "README.md",
+    "README.zh.md",
     "LICENSE"
   ]
 }
