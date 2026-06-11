@@ -20,6 +20,8 @@ After `install`, right-clicking in Windows Explorer shows a new entry:
 The exact label follows your system language — see [Language](#language)
 below.
 
+![Context menu with "Open Claude Here" entry, launching Claude Code in the selected folder](asset/QQ20260611-201403.png)
+
 Clicking it opens a terminal in that folder and runs `claude`.
 
 > **Win11 note:** the entry may live under **"Show more options"** in the
