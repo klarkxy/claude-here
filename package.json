@@ -29,6 +29,7 @@
   "files": [
     "bin/",
     "lib/",
+    "asset/",
     "README.md",
     "README.zh.md",
     "LICENSE"

@@ -19,7 +19,7 @@
 
 具体显示的标签跟随系统区域，见下面的 [语言](#语言) 小节。
 
-![右键菜单中出现「用 Claude Code 打开」，在所选目录启动 Claude Code](asset/QQ20260611-201403.png)
+![右键菜单中出现「用 Claude Code 打开」，在所选目录启动 Claude Code](asset/screenshot.png)
 
 点一下就会在那个目录打开终端，运行 `claude`。
 
