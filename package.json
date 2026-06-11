@@ -1,0 +1,24 @@
+{
+  "name": "claude-here",
+  "version": "0.2.0",
+  "description": "Add an \"Open Claude Here\" entry to the Windows right-click menu for Claude Code CLI.",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "claude-here": "bin/claude-here.cjs"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "windows",
+    "context-menu",
+    "right-click"
+  ],
+  "license": "SEE LICENSE IN LICENSE",
+  "files": [
+    "bin/",
+    "README.md",
+    "LICENSE"
+  ]
+}

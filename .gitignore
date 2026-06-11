@@ -1,0 +1,19 @@
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+
+# build artifacts
+dist/
+build/
+*.exe
+sea-prep.blob
+sea-config.json
+
+# editor
+.vscode/
+.idea/
+
+# env
+.env
+.env.local

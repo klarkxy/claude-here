@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls \"C:/Users/27837/.claude/plugins/cache/openai-codex/codex/1.0.4/\" 2>&1 | head -50)",
+      "Read(//c/Users/27837/.claude/plugins/cache/openai-codex/codex/1.0.4/**)",
+      "Bash(npm --version)",
+      "Bash(where claude *)",
+      "Bash(where wt.exe)",
+      "Bash(npm install *)",
+      "Bash(node bin/claude-here.mjs status)"
+    ]
+  }
+}
