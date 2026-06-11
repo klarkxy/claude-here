@@ -4,13 +4,17 @@
 'use strict'
 
 const { spawnSync } = require('node:child_process')
+const fs = require('node:fs')
+const path = require('node:path')
 const process = require('node:process')
 
 const { STRINGS, pickLang } = require('../lib/i18n.cjs')
 
 const BG_KEY = 'HKCU\\Software\\Classes\\Directory\\Background\\shell\\OpenClaudeHere'
 const DIR_KEY = 'HKCU\\Software\\Classes\\Directory\\shell\\OpenClaudeHere'
-const ICON = `${process.env.SystemRoot || 'C:\\Windows'}\\System32\\cmd.exe,0`
+// Used only when we can't locate claude.exe in the @anthropic-ai/claude-code
+// npm package — the embedded icon on that binary is the preferred source.
+const FALLBACK_ICON = `${process.env.SystemRoot || 'C:\\Windows'}\\System32\\cmd.exe,0`
 
 // ─── i18n ──────────────────────────────────────────────────────
 //
@@ -123,14 +127,48 @@ function pickTerminal(absoluteClaude) {
   ]
 }
 
+// ─── icon resolution ──────────────────────────────────────────
+// The context menu's "Icon" value points at a .ico/.exe/.dll. We try
+// to use the @anthropic-ai/claude-code package's claude.exe — it ships
+// with an embedded app icon. The npm shim (claude.cmd) is in the same
+// prefix dir as node_modules/, so we walk up from the shim path.
+//
+// On unusual setups where the shim and node_modules live in different
+// places (custom npm prefix), fall back to `npm root -g`.
+
+function resolveClaudeIcon() {
+  const r = spawnSync('where', ['claude'], { encoding: 'utf8' })
+  if (r.status !== 0) return null
+  const shim = (r.stdout || '').split(/\r?\n/).map((s) => s.trim()).find(Boolean)
+  if (!shim) return null
+
+  // Primary: sibling of the npm shim → node_modules/@anthropic-ai/claude-code/bin/claude.exe
+  const primary = path.join(
+    path.dirname(shim), 'node_modules',
+    '@anthropic-ai', 'claude-code', 'bin', 'claude.exe',
+  )
+  if (fs.existsSync(primary)) return `${primary},0`
+
+  // Fallback: npm root -g
+  const rg = spawnSync('npm', ['root', '-g'], { encoding: 'utf8' })
+  if (rg.status === 0) {
+    const root = (rg.stdout || '').trim()
+    if (root) {
+      const alt = path.join(root, '@anthropic-ai', 'claude-code', 'bin', 'claude.exe')
+      if (fs.existsSync(alt)) return `${alt},0`
+    }
+  }
+  return null
+}
+
 // ─── registry write/delete ────────────────────────────────────
 // reg.exe auto-creates parent keys when writing a value, so we
 // skip the redundant "add key /f" pre-step.
 
-function writeVerb(key, command) {
+function writeVerb(key, command, icon) {
   const r1 = reg('add', key, '/ve', '/d', t.verb, '/f')
   if (!r1.ok) throw new Error(`write verb to ${key} failed: ${r1.stderr}`)
-  const r2 = reg('add', key, '/v', 'Icon', '/t', 'REG_SZ', '/d', ICON, '/f')
+  const r2 = reg('add', key, '/v', 'Icon', '/t', 'REG_SZ', '/d', icon, '/f')
   if (!r2.ok) throw new Error(`write Icon to ${key} failed: ${r2.stderr}`)
   const r4 = reg('add', `${key}\\command`, '/ve', '/d', command, '/f')
   if (!r4.ok) throw new Error(`write command to ${key}\\command failed: ${r4.stderr}`)
@@ -161,16 +199,18 @@ function deleteKey(key) {
 function install() {
   const claudePath = resolveClaude()
   const [name, command] = pickTerminal(claudePath)
+  const icon = resolveClaudeIcon() || FALLBACK_ICON
 
   process.stdout.write(`claude path: ${claudePath}\n`)
   process.stdout.write(`terminal:    ${name}\n`)
+  process.stdout.write(`icon:        ${icon}\n`)
   process.stdout.write(`command:     ${command}\n\n`)
 
   const written = new Set()
   try {
-    writeVerb(BG_KEY, command)
+    writeVerb(BG_KEY, command, icon)
     written.add(BG_KEY)
-    writeVerb(DIR_KEY, command)
+    writeVerb(DIR_KEY, command, icon)
     written.add(DIR_KEY)
   } catch (err) {
     const rolled = []

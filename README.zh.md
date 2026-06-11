@@ -53,8 +53,8 @@ npx -y claude-here install --lang=en
 ```bash
 git clone https://github.com/klarkxy/claude-here
 cd claude-here
-node bin/claude-here.cjs install
-node bin/claude-here.cjs uninstall
+npm run register         # = node bin/claude-here.cjs install
+npm run unregister       # = node bin/claude-here.cjs uninstall
 ```
 
 `install` / `uninstall` 子命令的用法跟 `npx` 方式一样，只是没版本固定 — 跑的是你 clone 下来的那份。`--lang` 同样能用。
@@ -88,3 +88,5 @@ HKCU\Software\Classes\Directory\shell\OpenClaudeHere              (文件夹本�
 每项下面有个 `command` 子键，值是一段**自包含**的命令行，资源管理器右键时直接执行。`uninstall` 把这两组键删掉。
 
 终端在 install 时一次性选定（wt → pwsh → cmd 顺序回退），`claude` 的**绝对路径**也用 `where claude` 解析后直接写进注册表，完全不依赖资源管理器进程的 PATH 或你 shell 的 PATH。
+
+菜单图标取的是 `@anthropic-ai/claude-code` 包里 `claude.exe` 自带的嵌入图标，install 时解析成绝对路径写进去；找不到时回落到 `cmd.exe`。

@@ -60,8 +60,8 @@ through npm:
 ```bash
 git clone https://github.com/klarkxy/claude-here
 cd claude-here
-node bin/claude-here.cjs install
-node bin/claude-here.cjs uninstall
+npm run register         # = node bin/claude-here.cjs install
+npm run unregister       # = node bin/claude-here.cjs uninstall
 ```
 
 The `install` / `uninstall` subcommands work the same as via `npx`;
@@ -101,3 +101,7 @@ The terminal used is detected at install time (`wt` → `pwsh` → `cmd`),
 and the absolute path to `claude` is resolved via `where claude` and
 baked into the registry command. The command never relies on Explorer's
 PATH or your shell's PATH.
+
+The menu icon is read from `claude.exe` in the `@anthropic-ai/claude-code`
+npm package (its embedded app icon), resolved at install time. Falls
+back to `cmd.exe` if that binary can't be located.
