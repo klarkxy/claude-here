@@ -18,7 +18,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
-    "url": "https://github.com/klarkxy/claude-here.git"
+    "url": "git+https://github.com/klarkxy/claude-here.git"
   },
   "bugs": "https://github.com/klarkxy/claude-here/issues",
   "homepage": "https://github.com/klarkxy/claude-here#readme",
